@@ -4,21 +4,7 @@ import { format } from "date-fns";
 import { Smile, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EmojiPicker from "@/components/EmojiPicker";
-
-interface Reaction {
-  userId: string;
-  emoji: string;
-  timestamp: string;
-}
-
-interface Message {
-  id: string;
-  senderId: string;
-  text: string;
-  timestamp: string;
-  status: "sent" | "delivered" | "read";
-  reactions: Reaction[];
-}
+import { Message } from "@/types/chat";
 
 interface MessageItemProps {
   message: Message;

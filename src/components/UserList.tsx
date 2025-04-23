@@ -1,16 +1,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CircleDot } from "lucide-react";
-
-interface User {
-  id: string;
-  name: string;
-  avatar: string;
-  status: "online" | "offline";
-  lastSeen?: string;
-  lastMessage?: string;
-  unreadCount?: number;
-}
+import { User } from "@/types/chat";
 
 interface UserListProps {
   users: User[];

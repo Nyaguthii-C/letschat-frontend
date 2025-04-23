@@ -1,10 +1,12 @@
 
-export const mockUsers = [
+import { User, Message } from "@/types/chat";
+
+export const mockUsers: User[] = [
   {
     id: "user-1",
     name: "Alice Johnson",
     avatar: "/placeholder.svg",
-    status: "online" as const,
+    status: "online",
     lastMessage: "Hey, how's it going?",
     unreadCount: 2
   },
@@ -12,7 +14,7 @@ export const mockUsers = [
     id: "user-2",
     name: "Bob Smith",
     avatar: "/placeholder.svg",
-    status: "offline" as const,
+    status: "offline",
     lastSeen: "2 hours ago",
     lastMessage: "Can we talk about the project?",
   },
@@ -20,14 +22,14 @@ export const mockUsers = [
     id: "user-3",
     name: "Carol White",
     avatar: "/placeholder.svg",
-    status: "online" as const,
+    status: "online",
     lastMessage: "Thanks for your help!",
   },
   {
     id: "user-4",
     name: "Dave Brown",
     avatar: "/placeholder.svg",
-    status: "offline" as const,
+    status: "offline",
     lastSeen: "yesterday",
     lastMessage: "I'll get back to you soon.",
   },
@@ -35,19 +37,19 @@ export const mockUsers = [
     id: "user-5",
     name: "Eve Green",
     avatar: "/placeholder.svg",
-    status: "online" as const,
+    status: "online",
     lastMessage: "Looking forward to our meeting!",
     unreadCount: 1
   },
 ];
 
-export const mockMessages = [
+export const mockMessages: Message[] = [
   {
     id: "msg-1",
     senderId: "user-1",
     text: "Hey, how's it going?",
     timestamp: new Date(new Date().getTime() - 3600000).toISOString(),
-    status: "read" as const,
+    status: "read",
     reactions: []
   },
   {
@@ -55,7 +57,7 @@ export const mockMessages = [
     senderId: "current-user",
     text: "I'm good! Just working on that new project we discussed.",
     timestamp: new Date(new Date().getTime() - 3500000).toISOString(),
-    status: "read" as const,
+    status: "read",
     reactions: [
       {
         userId: "user-1",
@@ -69,7 +71,7 @@ export const mockMessages = [
     senderId: "user-1",
     text: "That's great! How's the progress so far?",
     timestamp: new Date(new Date().getTime() - 3300000).toISOString(),
-    status: "read" as const,
+    status: "read",
     reactions: []
   },
   {
@@ -77,7 +79,7 @@ export const mockMessages = [
     senderId: "current-user",
     text: "It's coming along well. I've completed about 70% of the tasks. I'm working on the design now.",
     timestamp: new Date(new Date().getTime() - 3200000).toISOString(),
-    status: "read" as const,
+    status: "read",
     reactions: [
       {
         userId: "user-1",
@@ -91,7 +93,7 @@ export const mockMessages = [
     senderId: "user-1",
     text: "That's impressive! Let me know if you need any help with the design part.",
     timestamp: new Date(new Date().getTime() - 1800000).toISOString(),
-    status: "read" as const,
+    status: "read",
     reactions: []
   },
   {
@@ -99,7 +101,7 @@ export const mockMessages = [
     senderId: "current-user",
     text: "Thanks! I'll definitely reach out if I get stuck.",
     timestamp: new Date(new Date().getTime() - 1700000).toISOString(),
-    status: "read" as const,
+    status: "read",
     reactions: []
   },
 ];

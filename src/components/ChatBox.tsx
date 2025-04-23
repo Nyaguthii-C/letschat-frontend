@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -7,26 +6,21 @@ import { CircleDot, Smile, Send } from "lucide-react";
 import { mockMessages } from "@/lib/mockData";
 import MessageItem from "@/components/MessageItem";
 import EmojiPicker from "@/components/EmojiPicker";
+import { Message, User } from "@/types/chat";
 
 interface ChatBoxProps {
-  selectedUser: {
-    id: string;
-    name: string;
-    avatar: string;
-    status: "online" | "offline";
-    lastSeen?: string;
-  };
+  selectedUser: User;
 }
 
 const ChatBox = ({ selectedUser }: ChatBoxProps) => {
-  const [messages, setMessages] = useState(mockMessages);
+  const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
   const handleSendMessage = () => {
     if (newMessage.trim()) {
-      const newMsg = {
+      const newMsg: Message = {
         id: `msg-${Date.now()}`,
         senderId: "current-user", // This would be the actual userId in a real app
         text: newMessage,
@@ -44,7 +38,7 @@ const ChatBox = ({ selectedUser }: ChatBoxProps) => {
         
         setTimeout(() => {
           setIsTyping(false);
-          const replyMsg = {
+          const replyMsg: Message = {
             id: `msg-${Date.now() + 1}`,
             senderId: selectedUser.id,
             text: "Thanks for your message!",
@@ -59,7 +53,7 @@ const ChatBox = ({ selectedUser }: ChatBoxProps) => {
           setTimeout(() => {
             setMessages(prev => 
               prev.map(msg => 
-                msg.id === newMsg.id ? { ...msg, status: "read" } : msg
+                msg.id === newMsg.id ? { ...msg, status: "read" as const } : msg
               )
             );
           }, 1000);

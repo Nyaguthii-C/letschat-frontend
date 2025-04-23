@@ -9,15 +9,20 @@ import UserList from "@/components/UserList";
 import NotificationCenter from "@/components/NotificationCenter";
 import { mockUsers } from "@/lib/mockData";
 import { useNavigate } from "react-router-dom";
+import { User as UserType } from "@/types/chat";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [selectedUser, setSelectedUser] = useState(mockUsers[0]);
+  const [selectedUser, setSelectedUser] = useState<UserType>(mockUsers[0]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasNewNotifications] = useState(true);
   
   const handleLogout = () => {
     navigate("/login");
+  };
+
+  const handleSelectUser = (user: UserType) => {
+    setSelectedUser(user);
   };
 
   return (
@@ -63,7 +68,7 @@ const Dashboard = () => {
           <UserList 
             users={mockUsers} 
             selectedUser={selectedUser} 
-            onSelectUser={setSelectedUser} 
+            onSelectUser={handleSelectUser} 
           />
         </div>
       </div>
