@@ -4,12 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { mockNotifications } from "@/lib/mockData";
 import { X, MessageSquare, Smile } from "lucide-react";
+import { useState } from "react";
 
 interface NotificationCenterProps {
   onClose: () => void;
 }
 
 const NotificationCenter = ({ onClose }: NotificationCenterProps) => {
+  const [notifications, setNotifications] = useState(mockNotifications);
+
+  const handleMarkAsRead = (notificationId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+  };
+
   return (
     <Card className="w-80 shadow-lg">
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
@@ -19,10 +26,14 @@ const NotificationCenter = ({ onClose }: NotificationCenterProps) => {
         </Button>
       </CardHeader>
       <CardContent className="max-h-80 overflow-auto">
-        {mockNotifications.length > 0 ? (
+        {notifications.length > 0 ? (
           <div className="space-y-3">
-            {mockNotifications.map((notification) => (
-              <div key={notification.id} className="flex items-start py-2 relative">
+            {notifications.map((notification) => (
+              <button
+                key={notification.id}
+                className="flex items-start py-2 relative w-full text-left hover:bg-gray-50 rounded-lg px-2 transition-colors"
+                onClick={() => handleMarkAsRead(notification.id)}
+              >
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={notification.userAvatar} alt={notification.userName} />
                   <AvatarFallback>{notification.userName.substring(0, 2)}</AvatarFallback>
@@ -42,7 +53,7 @@ const NotificationCenter = ({ onClose }: NotificationCenterProps) => {
                 {notification.unread && (
                   <div className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full" />
                 )}
-              </div>
+              </button>
             ))}
           </div>
         ) : (

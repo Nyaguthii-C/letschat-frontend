@@ -87,6 +87,14 @@ const ChatBox = ({ selectedUser }: ChatBoxProps) => {
     }));
   };
 
+  const handleMarkMessageAsRead = (messageId: string) => {
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId ? { ...msg, status: "read" as const } : msg
+      )
+    );
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Chat header */}
@@ -122,6 +130,7 @@ const ChatBox = ({ selectedUser }: ChatBoxProps) => {
             message={message}
             isCurrentUser={message.senderId === "current-user"}
             onAddReaction={(emoji) => handleAddReaction(message.id, emoji)}
+            onMarkAsRead={() => handleMarkMessageAsRead(message.id)}
           />
         ))}
         

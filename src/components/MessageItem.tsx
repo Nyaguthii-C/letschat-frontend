@@ -10,9 +10,10 @@ interface MessageItemProps {
   message: Message;
   isCurrentUser: boolean;
   onAddReaction: (emoji: string) => void;
+  onMarkAsRead?: () => void;
 }
 
-const MessageItem = ({ message, isCurrentUser, onAddReaction }: MessageItemProps) => {
+const MessageItem = ({ message, isCurrentUser, onAddReaction, onMarkAsRead }: MessageItemProps) => {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const messageRef = useRef<HTMLDivElement>(null);
 
@@ -27,6 +28,7 @@ const MessageItem = ({ message, isCurrentUser, onAddReaction }: MessageItemProps
     <div 
       ref={messageRef}
       className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} relative`}
+      onClick={!isCurrentUser && onMarkAsRead ? onMarkAsRead : undefined}
     >
       <div
         className={`max-w-[70%] relative group ${
