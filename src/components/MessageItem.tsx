@@ -80,9 +80,6 @@ const MessageItem = ({ message, isCurrentUser, onAddReaction, onMarkAsRead }: Me
                   {emoji}
                 </span>
               ))}
-              <span className="text-xs ml-1 text-gray-500">
-                {message.reactions.length}
-              </span>
             </div>
           </div>
         )}
@@ -92,3 +89,4 @@ const MessageItem = ({ message, isCurrentUser, onAddReaction, onMarkAsRead }: Me
 };
 
 export default MessageItem;
+
