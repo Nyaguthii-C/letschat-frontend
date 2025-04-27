@@ -36,9 +36,10 @@ const Login = () => {
       const response = await postLogin(data);
 
       if (response.status === 200) {
-        const { access, refresh } = response.data;
+        const { access, refresh, user } = response.data;
 
         localStorage.setItem('access_token', access);
+        localStorage.setItem('user', JSON.stringify(user));
         
         toast({
           title: "Login sucessful",
