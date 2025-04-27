@@ -101,11 +101,11 @@ const ChatBox = ({ selectedUser }: ChatBoxProps) => {
       <div className="p-4 border-b flex items-center justify-between bg-white">
         <div className="flex items-center space-x-3">
           <Avatar>
-            <AvatarImage src={selectedUser.avatar} alt={selectedUser.name} />
-            <AvatarFallback>{selectedUser.name.substring(0, 2)}</AvatarFallback>
+            <AvatarImage src={selectedUser.profile_photo} alt={selectedUser.full_name} />
+            <AvatarFallback>{selectedUser.full_name.substring(0, 2)}</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-medium">{selectedUser.name}</h3>
+            <h3 className="font-medium">{selectedUser.full_name}</h3>
             <div className="flex items-center">
               {selectedUser.status === "online" ? (
                 <>
@@ -137,8 +137,8 @@ const ChatBox = ({ selectedUser }: ChatBoxProps) => {
         {isTyping && (
           <div className="flex items-center ml-2 mt-2">
             <Avatar className="h-8 w-8 mr-2">
-              <AvatarImage src={selectedUser.avatar} />
-              <AvatarFallback>{selectedUser.name.substring(0, 2)}</AvatarFallback>
+              <AvatarImage src={selectedUser.profile_photo} />
+              <AvatarFallback>{selectedUser.full_name.substring(0, 2)}</AvatarFallback>
             </Avatar>
             <div className="bg-gray-200 px-4 py-2 rounded-lg inline-block">
               <div className="flex space-x-1">

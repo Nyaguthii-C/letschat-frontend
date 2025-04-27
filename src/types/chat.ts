@@ -18,9 +18,10 @@ export interface Message {
 
 export interface User {
   id: string;
-  name: string;
-  avatar: string;
-  status: "online" | "offline";
+  full_name: string;
+  // avatar?: string;
+  profile_photo?: string;
+  status?: "online" | "offline";
   lastSeen?: string;
   lastMessage?: string;
   unreadCount?: number;
