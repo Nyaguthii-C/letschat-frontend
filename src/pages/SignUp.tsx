@@ -11,12 +11,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Mail, Lock, User, Image } from "lucide-react";
+import { postSignUp } from '@/api';
 
 const signUpSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
-  fullName: z.string().min(3, { message: "Full name must be at least 3 characters" }),
+  full_name: z.string().min(3, { message: "Full name must be at least 3 characters" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  profilePhoto: z.instanceof(File).optional(),
+  profile_photo: z.instanceof(File).optional(),
 });
 
 type SignUpFormValues = z.infer<typeof signUpSchema>;
@@ -29,7 +30,7 @@ const SignUp = () => {
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       email: "",
-      fullName: "",
+      full_name: "",
       password: "",
     },
   });
@@ -37,7 +38,7 @@ const SignUp = () => {
   const handleProfilePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      form.setValue("profilePhoto", file);
+      form.setValue("profile_photo", file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setProfilePhotoPreview(e.target?.result as string);
@@ -46,16 +47,34 @@ const SignUp = () => {
     }
   };
 
+
   const onSubmit = async (data: SignUpFormValues) => {
     try {
       console.log("Form submitted:", data);
-      // In a real app, you would send this data to your backend
-      // For now, we'll just show a success message and redirect to login
-      toast({
-        title: "Account created",
-        description: "Your account has been created successfully.",
-      });
-      setTimeout(() => navigate("/login"), 1500);
+      
+      // Create a FormData object
+      const formData = new FormData();
+      
+      // Append the form fields to FormData
+      formData.append('email', data.email);
+      formData.append('full_name', data.full_name);
+      formData.append('password', data.password);
+      
+
+      if (data.profile_photo) {
+        formData.append('profile_photo', data.profile_photo);
+      }
+      
+      const response = await postSignUp(formData);
+      
+      if (response.status === 201) {
+        toast({
+          title: "Account created",
+          description: "Your account has been created successfully.",
+        });
+        
+        setTimeout(() => navigate("/login"), 1500);
+      }
     } catch (error) {
       console.error("Signup error:", error);
       toast({
@@ -65,6 +84,9 @@ const SignUp = () => {
       });
     }
   };
+  
+  
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
@@ -77,7 +99,7 @@ const SignUp = () => {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="flex justify-center mb-4">
-                <label htmlFor="profilePhoto" className="cursor-pointer">
+                <label htmlFor="profile_photo" className="cursor-pointer">
                   <Avatar className="h-24 w-24 border-2 border-primary">
                     {profilePhotoPreview ? (
                       <AvatarImage src={profilePhotoPreview} alt="Profile Preview" />
@@ -88,7 +110,7 @@ const SignUp = () => {
                     )}
                   </Avatar>
                   <input
-                    id="profilePhoto"
+                    id="profile_photo"
                     type="file"
                     accept="image/*"
                     className="hidden"
@@ -100,7 +122,7 @@ const SignUp = () => {
 
               <FormField
                 control={form.control}
-                name="fullName"
+                name="full_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
