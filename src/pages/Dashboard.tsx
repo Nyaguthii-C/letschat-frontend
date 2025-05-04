@@ -9,6 +9,7 @@ import NotificationCenter from "@/components/NotificationCenter";
 import { useNavigate } from "react-router-dom";
 import { User as UserType } from "@/types/chat";
 import { fetchUsers } from "@/lib/userService";
+import { getConversationWithUser } from "@/api";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const Dashboard = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasNewNotifications] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null); // State to hold current logged-in user
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   useEffect(() => {
 
@@ -33,6 +35,7 @@ const Dashboard = () => {
           full_name: u.full_name,
           profile_photo: u.profile_photo,
           status: "online", // optional default
+          email: u.email,
         }));
 
         setUsers(mappedUsers);
@@ -53,8 +56,10 @@ const Dashboard = () => {
     navigate("/login");
   };
 
-  const handleSelectUser = (user: UserType) => {
+  const handleSelectUser = async (user: UserType) => {
     setSelectedUser(user);
+    const conversationId = await getConversationWithUser(user.email);
+    setConversationId(conversationId);
   };
 
   return (
@@ -120,8 +125,8 @@ const Dashboard = () => {
           </div>
         )}
 
-        {selectedUser ? (
-          <ChatBox selectedUser={selectedUser} />
+        {selectedUser && conversationId ? (
+          <ChatBox selectedUser={selectedUser} conversationId={conversationId} />
         ) : (
           <div className="flex-1 flex items-center justify-center flex-col p-4">
             <MessageSquare className="h-16 w-16 text-gray-300 mb-4" />
