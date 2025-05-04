@@ -17,7 +17,12 @@ const MessageItem = ({ message, isCurrentUser, onAddReaction, onMarkAsRead }: Me
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const messageRef = useRef<HTMLDivElement>(null);
 
-  const formattedTime = format(new Date(message.timestamp), "h:mm a");
+  const formattedTime = (() => {
+    const date = new Date(message.timestamp);
+    return isNaN(date.getTime()) ? 'Invalid Date' : format(date, "MMM d, h:mm a");
+  })();
+  
+
   
   const handleAddReaction = (emoji: string) => {
     onAddReaction(emoji);
