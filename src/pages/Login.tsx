@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Mail, Lock } from "lucide-react";
+import { postLogin } from '@/api';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -31,13 +32,22 @@ const Login = () => {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       console.log("Form submitted:", data);
-      // In a real app, you would authenticate with your backend
-      // For now, we'll just show a success message and redirect
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-      setTimeout(() => navigate("/dashboard"), 1000);
+
+      const response = await postLogin(data);
+
+      if (response.status === 200) {
+        const { access, refresh, user } = response.data;
+
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        toast({
+          title: "Login sucessful",
+          description: "You have sucessfully loged into your account",
+        });
+        
+        setTimeout(() => navigate("/dashboard"), 1000);
+      }      
     } catch (error) {
       console.error("Login error:", error);
       toast({

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,65 +7,108 @@ import { mockMessages } from "@/lib/mockData";
 import MessageItem from "@/components/MessageItem";
 import EmojiPicker from "@/components/EmojiPicker";
 import { Message, User } from "@/types/chat";
+import api from "@/api";
 
 interface ChatBoxProps {
   selectedUser: User;
+  conversationId: string;
 }
 
-const ChatBox = ({ selectedUser }: ChatBoxProps) => {
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
+  // const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const currentUser = JSON.parse(localStorage.getItem('user'));
   
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      const newMsg: Message = {
-        id: `msg-${Date.now()}`,
-        senderId: "current-user", // This would be the actual userId in a real app
-        text: newMessage,
-        timestamp: new Date().toISOString(),
-        status: "sent",
-        reactions: []
-      };
-      
-      setMessages([...messages, newMsg]);
-      setNewMessage("");
-      
-      // Simulate received message and read status for demo purposes
-      setTimeout(() => {
-        setIsTyping(true);
-        
-        setTimeout(() => {
-          setIsTyping(false);
-          const replyMsg: Message = {
-            id: `msg-${Date.now() + 1}`,
-            senderId: selectedUser.id,
-            text: "Thanks for your message!",
-            timestamp: new Date().toISOString(),
-            status: "sent",
-            reactions: []
-          };
-          
-          setMessages(prev => [...prev, replyMsg]);
-          
-          // Mark the message as read after a short delay
-          setTimeout(() => {
-            setMessages(prev => 
-              prev.map(msg => 
-                msg.id === newMsg.id ? { ...msg, status: "read" as const } : msg
-              )
-            );
-          }, 1000);
-        }, 2000);
-      }, 1000);
+  const fetchMessages = async () => {
+    setLoading(true);
+    setError(null);
+  
+    try {
+      const token = localStorage.getItem("access_token");
+  
+      const res = await api.get(`conversations/${conversationId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      setMessages(
+        res.data.messages.map((msg: any) => ({
+          id: msg.id,
+          senderId: msg.sender,
+          text: msg.content,
+          timestamp: msg.timestamp || new Date().toISOString(),
+          status: msg.is_read ? "read" : "sent",
+          reactions: msg.reactions || [],
+        }))
+      );
+    } catch (err: any) {
+      console.error("Failed to fetch messages:", err);
+      setError("Failed to load messages. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
+    
+
+
+  useEffect(() => {
+    fetchMessages();
+  }, [conversationId]);
+  
+
+
+  const handleSendMessage = async () => {
+    if (newMessage.trim()) {
+      const token = localStorage.getItem("access_token");
+  
+      try {
+        const res = await api.post(
+          "messages/send/",
+          {
+            receiver: selectedUser.id,
+            content: newMessage,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        console.log("New message added:", newMessage);
+
+  
+        const newMsg: Message = {
+          id: res.data.id,
+          senderId: res.data.sender_id,
+          text: res.data.content,
+          timestamp: res.data.timestamp,
+          status: "sent",
+          reactions: [],
+        };
+  
+        setMessages(prev => [...prev, newMsg]);
+        setNewMessage("");
+
+        // Immediately re-fetch messages from backend
+        await fetchMessages();
+
+      } catch (err) {
+        console.error("Failed to send message:", err);
+      }
+    }
+  };
+  
 
   const handleAddReaction = (messageId: string, emoji: string) => {
     setMessages(messages.map(msg => {
       if (msg.id === messageId) {
-        const existingReactionIndex = msg.reactions.findIndex(r => r.emoji === emoji && r.userId === "current-user");
+        const existingReactionIndex = msg.reactions.findIndex(r => r.emoji === emoji && r.userId === currentUser.id);
         
         if (existingReactionIndex >= 0) {
           // Remove the reaction if it already exists
@@ -78,7 +121,7 @@ const ChatBox = ({ selectedUser }: ChatBoxProps) => {
             ...msg,
             reactions: [
               ...msg.reactions,
-              { userId: "current-user", emoji, timestamp: new Date().toISOString() }
+              { userId: currentUser.id, emoji, timestamp: new Date().toISOString() }
             ]
           };
         }
@@ -95,17 +138,19 @@ const ChatBox = ({ selectedUser }: ChatBoxProps) => {
     );
   };
 
+
+
   return (
     <div className="flex flex-col h-full">
       {/* Chat header */}
       <div className="p-4 border-b flex items-center justify-between bg-white">
         <div className="flex items-center space-x-3">
           <Avatar>
-            <AvatarImage src={selectedUser.avatar} alt={selectedUser.name} />
-            <AvatarFallback>{selectedUser.name.substring(0, 2)}</AvatarFallback>
+            <AvatarImage src={selectedUser.profile_photo} alt={selectedUser.full_name} />
+            <AvatarFallback>{selectedUser.full_name.substring(0, 2)}</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-medium">{selectedUser.name}</h3>
+            <h3 className="font-medium">{selectedUser.full_name}</h3>
             <div className="flex items-center">
               {selectedUser.status === "online" ? (
                 <>
@@ -122,23 +167,32 @@ const ChatBox = ({ selectedUser }: ChatBoxProps) => {
         </div>
       </div>
       
-      {/* Messages area */}
+
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {messages.map(message => (
-          <MessageItem 
-            key={message.id}
-            message={message}
-            isCurrentUser={message.senderId === "current-user"}
-            onAddReaction={(emoji) => handleAddReaction(message.id, emoji)}
-            onMarkAsRead={() => handleMarkMessageAsRead(message.id)}
-          />
-        ))}
-        
+        {loading ? (
+          <p className="text-center text-muted-foreground">Loading messages...</p>
+        ) : error ? (
+          <p className="text-center text-red-500">{error}</p>
+        ) : messages.length === 0 ? (
+          <p className="text-center text-muted-foreground">No messages yet.</p>
+        ) : (
+          messages.map(message => (
+
+            <MessageItem 
+              key={message.id}
+              message={message}
+              isCurrentUser={message.senderId === currentUser.id}
+              onAddReaction={(emoji) => handleAddReaction(message.id, emoji)}
+              onMarkAsRead={() => handleMarkMessageAsRead(message.id)}
+            />
+          ))
+        )}
+
         {isTyping && (
           <div className="flex items-center ml-2 mt-2">
             <Avatar className="h-8 w-8 mr-2">
-              <AvatarImage src={selectedUser.avatar} />
-              <AvatarFallback>{selectedUser.name.substring(0, 2)}</AvatarFallback>
+              <AvatarImage src={selectedUser.profile_photo} />
+              <AvatarFallback>{selectedUser.full_name.substring(0, 2)}</AvatarFallback>
             </Avatar>
             <div className="bg-gray-200 px-4 py-2 rounded-lg inline-block">
               <div className="flex space-x-1">
@@ -150,7 +204,10 @@ const ChatBox = ({ selectedUser }: ChatBoxProps) => {
           </div>
         )}
       </div>
-      
+
+
+
+
       {/* Input area */}
       <div className="p-4 border-t bg-white relative">
         {showEmojiPicker && (

@@ -23,8 +23,8 @@ const UserList = ({ users, selectedUser, onSelectUser }: UserListProps) => {
         >
           <div className="relative">
             <Avatar>
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>{user.name.substring(0, 2)}</AvatarFallback>
+              <AvatarImage src={user.profile_photo} alt={user.full_name} />
+              <AvatarFallback>{user.full_name.substring(0, 2)}</AvatarFallback>
             </Avatar>
             {user.status === "online" && (
               <div className="absolute bottom-0 right-0 rounded-full bg-green-500 h-2.5 w-2.5 ring-2 ring-white" />
@@ -33,7 +33,7 @@ const UserList = ({ users, selectedUser, onSelectUser }: UserListProps) => {
           
           <div className="ml-3 text-left flex-1 overflow-hidden">
             <div className="flex items-center justify-between">
-              <p className="font-medium truncate">{user.name}</p>
+              <p className="font-medium truncate">{user.full_name}</p>
               {user.unreadCount && user.unreadCount > 0 ? (
                 <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center ml-1">
                   {user.unreadCount}
