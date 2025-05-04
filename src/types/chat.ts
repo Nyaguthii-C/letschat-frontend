@@ -10,6 +10,7 @@ export interface Reaction {
 export interface Message {
   id: string;
   senderId: string;
+  receiverId?: string;
   text: string;
   timestamp: string;
   status: MessageStatus;
@@ -22,7 +23,9 @@ export interface User {
   // avatar?: string;
   profile_photo?: string;
   status?: "online" | "offline";
+  email?: string;
   lastSeen?: string;
   lastMessage?: string;
   unreadCount?: number;
+
 }
