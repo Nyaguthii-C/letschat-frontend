@@ -24,51 +24,43 @@ const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
   const [error, setError] = useState<string | null>(null);
   const currentUser = JSON.parse(localStorage.getItem('user'));
   
-  // const handleSendMessage = () => {
-  //   if (newMessage.trim()) {
-  //     const newMsg: Message = {
-  //       id: `msg-${Date.now()}`,
-  //       senderId: "current-user", // This would be the actual userId in a real app
-  //       text: newMessage,
-  //       timestamp: new Date().toISOString(),
-  //       status: "sent",
-  //       reactions: []
-  //     };
-      
-  //     setMessages([...messages, newMsg]);
-  //     setNewMessage("");
-      
-  //     // Simulate received message and read status for demo purposes
-  //     setTimeout(() => {
-  //       setIsTyping(true);
-        
-  //       setTimeout(() => {
-  //         setIsTyping(false);
-  //         const replyMsg: Message = {
-  //           id: `msg-${Date.now() + 1}`,
-  //           senderId: selectedUser.id,
-  //           text: "Thanks for your message!",
-  //           timestamp: new Date().toISOString(),
-  //           status: "sent",
-  //           reactions: []
-  //         };
-          
-  //         setMessages(prev => [...prev, replyMsg]);
-          
-  //         // Mark the message as read after a short delay
-  //         setTimeout(() => {
-  //           setMessages(prev => 
-  //             prev.map(msg => 
-  //               msg.id === newMsg.id ? { ...msg, status: "read" as const } : msg
-  //             )
-  //           );
-  //         }, 1000);
-  //       }, 2000);
-  //     }, 1000);
-  //   }
-  // };
+  const fetchMessages = async () => {
+    setLoading(true);
+    setError(null);
+  
+    try {
+      const token = localStorage.getItem("access_token");
+  
+      const res = await api.get(`conversations/${conversationId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      setMessages(
+        res.data.messages.map((msg: any) => ({
+          id: msg.id,
+          senderId: msg.sender,
+          text: msg.content,
+          timestamp: msg.timestamp || new Date().toISOString(),
+          status: msg.is_read ? "read" : "sent",
+          reactions: msg.reactions || [],
+        }))
+      );
+    } catch (err: any) {
+      console.error("Failed to fetch messages:", err);
+      setError("Failed to load messages. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+    
 
 
+  useEffect(() => {
+    fetchMessages();
+  }, [conversationId]);
+  
 
 
   const handleSendMessage = async () => {
@@ -93,7 +85,7 @@ const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
   
         const newMsg: Message = {
           id: res.data.id,
-          senderId: res.data.sender_id, // Adjust to match your API's actual response
+          senderId: res.data.sender_id,
           text: res.data.content,
           timestamp: res.data.timestamp,
           status: "sent",
@@ -102,15 +94,16 @@ const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
   
         setMessages(prev => [...prev, newMsg]);
         setNewMessage("");
+
+        // Immediately re-fetch messages from backend
+        await fetchMessages();
+
       } catch (err) {
         console.error("Failed to send message:", err);
       }
     }
   };
   
-
-
-
 
   const handleAddReaction = (messageId: string, emoji: string) => {
     setMessages(messages.map(msg => {
@@ -147,63 +140,6 @@ const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
 
 
 
-  // useEffect(() => {
-  //   const fetchMessages = async () => {
-  //     const res = await api.get(`conversations/${conversationId}`);
-  //     setMessages(res.data);
-  //     console.log('fetched messages for user', res.data)
-  //   };
-  
-  //   fetchMessages();
-  // }, [conversationId]);
-  
-
-
-
-  useEffect(() => {
-    const fetchMessages = async () => {
-      setLoading(true);
-      setError(null);
-  
-      try {
-        const token = localStorage.getItem("access_token");
-
-        const res = await api.get(
-          `conversations/${conversationId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }      
-        
-        );
-        // setMessages(res.data.messages);
-        setMessages(
-          res.data.messages.map((msg: any) => ({
-            id: msg.id,
-            senderId: msg.sender,
-            text: msg.content,
-            timestamp: msg.timestamp,
-            status: msg.is_read ? "read" : "sent",
-            reactions: msg.reactions || [],
-          }))
-        );
-      } catch (err: any) {
-        console.error("Failed to fetch messages:", err);
-        setError("Failed to load messages. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    fetchMessages();
-  }, [conversationId]);
-    
-
-
-
-
-
   return (
     <div className="flex flex-col h-full">
       {/* Chat header */}
@@ -231,35 +167,6 @@ const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
         </div>
       </div>
       
-      {/* Messages area */}
-      {/* <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {messages.map(message => (
-          <MessageItem 
-            key={message.id}
-            message={message}
-            isCurrentUser={message.senderId === "current-user"}
-            onAddReaction={(emoji) => handleAddReaction(message.id, emoji)}
-            onMarkAsRead={() => handleMarkMessageAsRead(message.id)}
-          />
-        ))}
-        
-        {isTyping && (
-          <div className="flex items-center ml-2 mt-2">
-            <Avatar className="h-8 w-8 mr-2">
-              <AvatarImage src={selectedUser.profile_photo} />
-              <AvatarFallback>{selectedUser.full_name.substring(0, 2)}</AvatarFallback>
-            </Avatar>
-            <div className="bg-gray-200 px-4 py-2 rounded-lg inline-block">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-                <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-75"></div>
-                <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-150"></div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div> */}
-
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
         {loading ? (
