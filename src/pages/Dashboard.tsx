@@ -17,7 +17,7 @@ const Dashboard = () => {
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasNewNotifications] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null); // State to hold current logged-in user
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -125,8 +125,8 @@ const Dashboard = () => {
           </div>
         )}
 
-        {selectedUser && conversationId ? (
-          <ChatBox selectedUser={selectedUser} conversationId={conversationId} />
+        {selectedUser ? (
+          <ChatBox selectedUser={selectedUser} conversationId={conversationId} setConversationId={setConversationId} />
         ) : (
           <div className="flex-1 flex items-center justify-center flex-col p-4">
             <MessageSquare className="h-16 w-16 text-gray-300 mb-4" />
