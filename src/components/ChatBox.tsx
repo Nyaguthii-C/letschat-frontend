@@ -42,7 +42,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   
   // Added state for message editing and selection
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  const [editText, setEditText] = useState("");
   const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showMultiDeleteDialog, setShowMultiDeleteDialog] = useState(false);
@@ -137,39 +136,55 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       const token = localStorage.getItem("access_token");
   
       try {
-        const res = await api.post(
-          "messages/send/",
-          {
-            receiver: selectedUser.id,
-            content: newMessage,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        console.log("New message added:", newMessage);
-
-  
-        const newMsg: Message = {
-          id: res.data.id,
-          senderId: res.data.sender_id,
-          text: res.data.content,
-          timestamp: res.data.timestamp,
-          status: "sent",
-          reactions: [],
-        };
-
-        if (!conversationId) {
-          const newConversationId = res.data.data.conversation;
-          setConversationId(newConversationId);
-          await fetchMessagesWithId(newConversationId);
+        // If we are editing a message, handle it differently
+        if (editingMessage) {
+          // Make API call to update the message
+          // For now, we'll just update it locally since the API may not support message edits
+          setMessages(prevMessages =>
+            prevMessages.map(msg => 
+              msg.id === editingMessage.id ? { ...msg, text: newMessage } : msg
+            )
+          );
+          
+          // Clear editing state
+          setEditingMessage(null);
         } else {
-          await fetchMessages(); // use existing ID
+          // Regular new message sending
+          const res = await api.post(
+            "messages/send/",
+            {
+              receiver: selectedUser.id,
+              content: newMessage,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          console.log("New message added:", newMessage);
+
+    
+          const newMsg: Message = {
+            id: res.data.id,
+            senderId: res.data.sender_id,
+            text: res.data.content,
+            timestamp: res.data.timestamp,
+            status: "sent",
+            reactions: [],
+          };
+
+          if (!conversationId) {
+            const newConversationId = res.data.data.conversation;
+            setConversationId(newConversationId);
+            await fetchMessagesWithId(newConversationId);
+          } else {
+            await fetchMessages(); // use existing ID
+          }
+          
+          setMessages(prev => [...prev, newMsg]);
         }
         
-        setMessages(prev => [...prev, newMsg]);
         setNewMessage("");
 
         // Immediately re-fetch messages from backend
@@ -181,31 +196,9 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
     }
   };
   
-  const handleEditMessage = async () => {
-    if (!editingMessage || !editText.trim()) return;
-    
-    const token = localStorage.getItem("access_token");
-    
-    try {
-      // Simulated API call as the endpoint might not exist
-      // In a real app, you would have an endpoint like:
-      // await api.put(`messages/${editingMessage.id}`, { content: editText }, {...});
-      
-      // Update message locally
-      setMessages(prevMessages =>
-        prevMessages.map(msg => 
-          msg.id === editingMessage.id ? { ...msg, text: editText } : msg
-        )
-      );
-      
-      setEditingMessage(null);
-      setEditText("");
-      
-      // In a real app, you would re-fetch from the server after edit
-      // await fetchMessages();
-    } catch (err) {
-      console.error("Failed to edit message:", err);
-    }
+  const handleEditMessage = (message: Message) => {
+    setEditingMessage(message);
+    setNewMessage(message.text);
   };
   
   const handleDeleteMessage = async () => {
@@ -421,10 +414,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
               isSelected={selectedMessages.has(message.id)}
               onAddReaction={(emoji) => handleAddReaction(message.id, emoji)}
               onMarkAsRead={() => handleMarkMessageAsRead(message.id)}
-              onEdit={() => {
-                setEditingMessage(message);
-                setEditText(message.text);
-              }}
+              onEdit={() => handleEditMessage(message)}
               onDelete={() => {
                 setMessageToDelete(message);
                 setShowDeleteDialog(true);
@@ -479,7 +469,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
+            placeholder={editingMessage ? "Edit message..." : "Type a message..."}
             className="flex-1"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -494,35 +484,23 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
             onClick={handleSendMessage} 
             disabled={!newMessage.trim()}
           >
-            <Send className="h-5 w-5" />
+            {editingMessage ? "Update" : <Send className="h-5 w-5" />}
           </Button>
-        </div>
-      </div>
-
-      {/* Edit Message Dialog */}
-      <Dialog open={!!editingMessage} onOpenChange={(open) => !open && setEditingMessage(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Message</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Input
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              placeholder="Edit your message..."
-              className="w-full"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingMessage(null)}>
+          
+          {editingMessage && (
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={() => {
+                setEditingMessage(null);
+                setNewMessage("");
+              }}
+            >
               Cancel
             </Button>
-            <Button onClick={handleEditMessage}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+        </div>
+      </div>
 
       {/* Delete Message Confirmation */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
