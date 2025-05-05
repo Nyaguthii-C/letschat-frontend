@@ -48,6 +48,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -56,6 +57,13 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Focus input when editing a message
+  useEffect(() => {
+    if (editingMessage && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editingMessage]);
 
   const fetchMessages = async () => {
     if (!conversationId) return; 
@@ -136,10 +144,14 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       const token = localStorage.getItem("access_token");
   
       try {
-        // If we are editing a message, handle it differently
+        // If we are editing a message, handle the update
         if (editingMessage) {
-          // Make API call to update the message
-          // For now, we'll just update it locally since the API may not support message edits
+          console.log("Editing message:", editingMessage.id, "with new text:", newMessage);
+          
+          // In a real app, you would make an API call to update the message
+          // await api.put(`messages/${editingMessage.id}`, { content: newMessage }, { headers: { Authorization: `Bearer ${token}` } });
+          
+          // For now, we'll update it locally
           setMessages(prevMessages =>
             prevMessages.map(msg => 
               msg.id === editingMessage.id ? { ...msg, text: newMessage } : msg
@@ -164,7 +176,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
           );
           console.log("New message added:", newMessage);
 
-    
           const newMsg: Message = {
             id: res.data.id,
             senderId: res.data.sender_id,
@@ -197,8 +208,12 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   };
   
   const handleEditMessage = (message: Message) => {
+    console.log("Edit message triggered:", message);
     setEditingMessage(message);
     setNewMessage(message.text);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   };
   
   const handleDeleteMessage = async () => {
@@ -340,6 +355,11 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
     }
   };
 
+  const cancelEditing = () => {
+    setEditingMessage(null);
+    setNewMessage("");
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Chat header */}
@@ -456,6 +476,20 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
           </div>
         )}
         
+        {/* Edit mode indicator */}
+        {editingMessage && (
+          <div className="mb-2 bg-yellow-50 p-2 rounded-md text-sm flex items-center justify-between">
+            <span>Editing message</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={cancelEditing}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
         <div className="flex items-center space-x-2">
           <Button 
             type="button" 
@@ -467,6 +501,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
           </Button>
           
           <Input
+            ref={inputRef}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder={editingMessage ? "Edit message..." : "Type a message..."}
@@ -490,11 +525,8 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
           {editingMessage && (
             <Button 
               type="button" 
-              variant="ghost" 
-              onClick={() => {
-                setEditingMessage(null);
-                setNewMessage("");
-              }}
+              variant="outline" 
+              onClick={cancelEditing}
             >
               Cancel
             </Button>

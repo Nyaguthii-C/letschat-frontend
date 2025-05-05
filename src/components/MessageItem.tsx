@@ -81,13 +81,13 @@ const MessageItem = ({
               )}
             </div>
             
-            {/* Action buttons for current user's messages */}
+            {/* Action buttons for current user's messages - Make them more visible */}
             {isCurrentUser && (
-              <div className="absolute -right-20 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+              <div className="absolute -right-24 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
                 <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6"
+                  variant="outline" 
+                  size="sm" 
+                  className="h-6 w-6 bg-white hover:bg-gray-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (onEdit) onEdit();
@@ -96,9 +96,9 @@ const MessageItem = ({
                   <Edit className="h-4 w-4" />
                 </Button>
                 <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6"
+                  variant="outline" 
+                  size="sm" 
+                  className="h-6 w-6 bg-white hover:bg-gray-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (onDelete) onDelete();
@@ -107,9 +107,9 @@ const MessageItem = ({
                   <Trash2 className="h-4 w-4" />
                 </Button>
                 <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6"
+                  variant="outline" 
+                  size="sm" 
+                  className="h-6 w-6 bg-white hover:bg-gray-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowReactionPicker(!showReactionPicker);
@@ -160,11 +160,11 @@ const MessageItem = ({
       <ContextMenuContent>
         {isCurrentUser && (
           <>
-            <ContextMenuItem onClick={onEdit}>
+            <ContextMenuItem onClick={() => onEdit && onEdit()}>
               <Edit className="h-4 w-4 mr-2" />
               Edit Message
             </ContextMenuItem>
-            <ContextMenuItem onClick={onDelete}>
+            <ContextMenuItem onClick={() => onDelete && onDelete()}>
               <Trash2 className="h-4 w-4 mr-2" />
               Delete Message
             </ContextMenuItem>
