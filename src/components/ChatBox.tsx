@@ -1,13 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CircleDot, Smile, Send } from "lucide-react";
-import { mockMessages } from "@/lib/mockData";
+import { CircleDot, Smile, Send, X, Trash2 } from "lucide-react";
 import MessageItem from "@/components/MessageItem";
 import EmojiPicker from "@/components/EmojiPicker";
 import { Message, User } from "@/types/chat";
 import api from "@/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ChatBoxProps {
   selectedUser: User;
@@ -16,15 +32,32 @@ interface ChatBoxProps {
 }
 
 const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxProps) => {
-  // const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   
+  // Added state for message editing and selection
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [editText, setEditText] = useState("");
+  const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showMultiDeleteDialog, setShowMultiDeleteDialog] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   const fetchMessages = async () => {
     if (!conversationId) return; 
 
@@ -58,9 +91,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
     }
   };
     
-
-
-
   const fetchMessagesWithId = async (id: string) => {
     setLoading(true);
     setError(null);
@@ -91,24 +121,10 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
     }
   };
   
-
-
-
-
-  // useEffect(() => {
-  //   fetchMessages();
-  // }, [conversationId]);
-  
-  // useEffect(() => {
-  //   if (conversationId) {
-  //     fetchMessages();
-  //   }
-  // }, [conversationId]);
-
-
   useEffect(() => {
     // Always clear messages when selectedUser changes
     setMessages([]);
+    setSelectedMessages(new Set());
   
     // Only fetch if there's an actual conversation ID
     if (conversationId) {
@@ -116,11 +132,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
     }
   }, [selectedUser.id, conversationId]);
   
-
-
-
-
-
   const handleSendMessage = async () => {
     if (newMessage.trim()) {
       const token = localStorage.getItem("access_token");
@@ -158,8 +169,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
           await fetchMessages(); // use existing ID
         }
         
-
-
         setMessages(prev => [...prev, newMsg]);
         setNewMessage("");
 
@@ -172,7 +181,83 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
     }
   };
   
-
+  const handleEditMessage = async () => {
+    if (!editingMessage || !editText.trim()) return;
+    
+    const token = localStorage.getItem("access_token");
+    
+    try {
+      // Simulated API call as the endpoint might not exist
+      // In a real app, you would have an endpoint like:
+      // await api.put(`messages/${editingMessage.id}`, { content: editText }, {...});
+      
+      // Update message locally
+      setMessages(prevMessages =>
+        prevMessages.map(msg => 
+          msg.id === editingMessage.id ? { ...msg, text: editText } : msg
+        )
+      );
+      
+      setEditingMessage(null);
+      setEditText("");
+      
+      // In a real app, you would re-fetch from the server after edit
+      // await fetchMessages();
+    } catch (err) {
+      console.error("Failed to edit message:", err);
+    }
+  };
+  
+  const handleDeleteMessage = async () => {
+    if (!messageToDelete) return;
+    
+    const token = localStorage.getItem("access_token");
+    
+    try {
+      // Simulated API call as the endpoint might not exist
+      // In a real app, you would have an endpoint like:
+      // await api.delete(`messages/${messageToDelete.id}`, {...});
+      
+      // Remove message locally
+      setMessages(prevMessages => 
+        prevMessages.filter(msg => msg.id !== messageToDelete.id)
+      );
+      
+      setMessageToDelete(null);
+      setShowDeleteDialog(false);
+      
+      // In a real app, you would re-fetch from the server after delete
+      // await fetchMessages();
+    } catch (err) {
+      console.error("Failed to delete message:", err);
+    }
+  };
+  
+  const handleDeleteSelectedMessages = async () => {
+    if (selectedMessages.size === 0) return;
+    
+    const token = localStorage.getItem("access_token");
+    
+    try {
+      // Simulated API call as the endpoint might not exist
+      // In a real app, you would have an endpoint like:
+      // await api.delete(`messages/batch`, { ids: Array.from(selectedMessages) }, {...});
+      
+      // Remove selected messages locally
+      setMessages(prevMessages => 
+        prevMessages.filter(msg => !selectedMessages.has(msg.id))
+      );
+      
+      setSelectedMessages(new Set());
+      setShowMultiDeleteDialog(false);
+      
+      // In a real app, you would re-fetch from the server after delete
+      // await fetchMessages();
+    } catch (err) {
+      console.error("Failed to delete selected messages:", err);
+    }
+  };
+  
   const handleAddReaction = async (messageId: string, emoji: string) => {
     const token = localStorage.getItem("access_token");
   
@@ -234,16 +319,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
     );
   };
   
-
-
-
-
-
-
-
-
-
-
   const handleMarkMessageAsRead = (messageId: string) => {
     setMessages(prev => 
       prev.map(msg => 
@@ -251,8 +326,26 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       )
     );
   };
-
-
+  
+  const handleToggleSelect = (messageId: string) => {
+    const newSelected = new Set(selectedMessages);
+    if (newSelected.has(messageId)) {
+      newSelected.delete(messageId);
+    } else {
+      newSelected.add(messageId);
+    }
+    setSelectedMessages(newSelected);
+  };
+  
+  const toggleSelectAll = () => {
+    if (selectedMessages.size === messages.length) {
+      // If all are selected, deselect all
+      setSelectedMessages(new Set());
+    } else {
+      // Otherwise, select all
+      setSelectedMessages(new Set(messages.map(msg => msg.id)));
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -279,6 +372,36 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
             </div>
           </div>
         </div>
+        
+        {/* Selection controls */}
+        {selectedMessages.size > 0 && (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm">{selectedMessages.size} selected</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSelectedMessages(new Set())}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => setShowMultiDeleteDialog(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={toggleSelectAll}
+            >
+              {selectedMessages.size === messages.length ? "Deselect All" : "Select All"}
+            </Button>
+          </div>
+        )}
       </div>
       
 
@@ -290,15 +413,23 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
         ) : messages.length === 0 ? (
           <p className="text-center text-muted-foreground">No messages yet.</p>
         ) : (
-          messages.map((message,index) => (
-
+          messages.map((message, index) => (
             <MessageItem 
-              // key={message.id}
-              key={`${message.id}-${index}`} // Fallback to avoid key collisions
+              key={`${message.id}-${index}`}
               message={message}
               isCurrentUser={message.senderId === currentUser.id}
+              isSelected={selectedMessages.has(message.id)}
               onAddReaction={(emoji) => handleAddReaction(message.id, emoji)}
               onMarkAsRead={() => handleMarkMessageAsRead(message.id)}
+              onEdit={() => {
+                setEditingMessage(message);
+                setEditText(message.text);
+              }}
+              onDelete={() => {
+                setMessageToDelete(message);
+                setShowDeleteDialog(true);
+              }}
+              onSelect={() => handleToggleSelect(message.id)}
             />
           ))
         )}
@@ -318,10 +449,8 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
-
-
-
 
       {/* Input area */}
       <div className="p-4 border-t bg-white relative">
@@ -369,6 +498,63 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
           </Button>
         </div>
       </div>
+
+      {/* Edit Message Dialog */}
+      <Dialog open={!!editingMessage} onOpenChange={(open) => !open && setEditingMessage(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Message</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              placeholder="Edit your message..."
+              className="w-full"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMessage(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditMessage}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Message Confirmation */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this message? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setMessageToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMessage}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Multiple Messages Confirmation */}
+      <AlertDialog open={showMultiDeleteDialog} onOpenChange={setShowMultiDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected Messages</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedMessages.size} message{selectedMessages.size !== 1 ? 's' : ''}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSelectedMessages}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
