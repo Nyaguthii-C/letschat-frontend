@@ -173,30 +173,76 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   };
   
 
-  const handleAddReaction = (messageId: string, emoji: string) => {
-    setMessages(messages.map(msg => {
-      if (msg.id === messageId) {
-        const existingReactionIndex = msg.reactions.findIndex(r => r.emoji === emoji && r.userId === currentUser.id);
-        
-        if (existingReactionIndex >= 0) {
-          // Remove the reaction if it already exists
-          const updatedReactions = [...msg.reactions];
-          updatedReactions.splice(existingReactionIndex, 1);
-          return { ...msg, reactions: updatedReactions };
-        } else {
-          // Add the new reaction
-          return {
-            ...msg,
-            reactions: [
+  const handleAddReaction = async (messageId: string, emoji: string) => {
+    const token = localStorage.getItem("access_token");
+  
+    setMessages(prevMessages =>
+      prevMessages.map(msg => {
+        if (msg.id === messageId) {
+          const existingReactionIndex = msg.reactions.findIndex(
+            r => r.emoji === emoji && r.userId === currentUser.id
+          );
+  
+          if (existingReactionIndex >= 0) {
+            // Remove reaction from local state
+            const updatedReactions = [...msg.reactions];
+            updatedReactions.splice(existingReactionIndex, 1);
+  
+            // Persist remove to backend
+            api.post(
+              `messages/${messageId}/remove-reaction/`,
+              { emoji },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            ).catch(err => {
+              console.error("Failed to remove reaction:", err);
+            });
+  
+            return { ...msg, reactions: updatedReactions };
+          } else {
+            // Add reaction locally
+            const newReactions = [
               ...msg.reactions,
-              { userId: currentUser.id, emoji, timestamp: new Date().toISOString() }
-            ]
-          };
+              {
+                userId: currentUser.id,
+                emoji,
+                timestamp: new Date().toISOString(),
+              },
+            ];
+  
+            // Persist add to backend
+            api.post(
+              `messages/${messageId}/react/`,
+              { emoji },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            ).catch(err => {
+              console.error("Failed to add reaction:", err);
+            });
+  
+            return { ...msg, reactions: newReactions };
+          }
         }
-      }
-      return msg;
-    }));
+        return msg;
+      })
+    );
   };
+  
+
+
+
+
+
+
+
+
+
 
   const handleMarkMessageAsRead = (messageId: string) => {
     setMessages(prev => 
@@ -244,10 +290,11 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
         ) : messages.length === 0 ? (
           <p className="text-center text-muted-foreground">No messages yet.</p>
         ) : (
-          messages.map(message => (
+          messages.map((message,index) => (
 
             <MessageItem 
-              key={message.id}
+              // key={message.id}
+              key={`${message.id}-${index}`} // Fallback to avoid key collisions
               message={message}
               isCurrentUser={message.senderId === currentUser.id}
               onAddReaction={(emoji) => handleAddReaction(message.id, emoji)}
