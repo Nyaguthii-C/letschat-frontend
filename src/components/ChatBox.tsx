@@ -12,9 +12,10 @@ import api from "@/api";
 interface ChatBoxProps {
   selectedUser: User;
   conversationId: string;
+  setConversationId: (id: string) => void;
 }
 
-const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
+const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxProps) => {
   // const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -25,6 +26,8 @@ const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
   const currentUser = JSON.parse(localStorage.getItem('user'));
   
   const fetchMessages = async () => {
+    if (!conversationId) return; 
+
     setLoading(true);
     setError(null);
   
@@ -57,10 +60,65 @@ const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
     
 
 
-  useEffect(() => {
-    fetchMessages();
-  }, [conversationId]);
+
+  const fetchMessagesWithId = async (id: string) => {
+    setLoading(true);
+    setError(null);
   
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await api.get(`conversations/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      setMessages(
+        res.data.messages.map((msg: any) => ({
+          id: msg.id,
+          senderId: msg.sender,
+          text: msg.content,
+          timestamp: msg.timestamp || new Date().toISOString(),
+          status: msg.is_read ? "read" : "sent",
+          reactions: msg.reactions || [],
+        }))
+      );
+    } catch (err: any) {
+      console.error("Failed to fetch messages:", err);
+      setError("Failed to load messages. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
+
+
+
+  // useEffect(() => {
+  //   fetchMessages();
+  // }, [conversationId]);
+  
+  // useEffect(() => {
+  //   if (conversationId) {
+  //     fetchMessages();
+  //   }
+  // }, [conversationId]);
+
+
+  useEffect(() => {
+    // Always clear messages when selectedUser changes
+    setMessages([]);
+  
+    // Only fetch if there's an actual conversation ID
+    if (conversationId) {
+      fetchMessages();
+    }
+  }, [selectedUser.id, conversationId]);
+  
+
+
+
 
 
   const handleSendMessage = async () => {
@@ -91,7 +149,17 @@ const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
           status: "sent",
           reactions: [],
         };
-  
+
+        if (!conversationId) {
+          const newConversationId = res.data.data.conversation;
+          setConversationId(newConversationId);
+          await fetchMessagesWithId(newConversationId);
+        } else {
+          await fetchMessages(); // use existing ID
+        }
+        
+
+
         setMessages(prev => [...prev, newMsg]);
         setNewMessage("");
 
@@ -105,30 +173,76 @@ const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
   };
   
 
-  const handleAddReaction = (messageId: string, emoji: string) => {
-    setMessages(messages.map(msg => {
-      if (msg.id === messageId) {
-        const existingReactionIndex = msg.reactions.findIndex(r => r.emoji === emoji && r.userId === currentUser.id);
-        
-        if (existingReactionIndex >= 0) {
-          // Remove the reaction if it already exists
-          const updatedReactions = [...msg.reactions];
-          updatedReactions.splice(existingReactionIndex, 1);
-          return { ...msg, reactions: updatedReactions };
-        } else {
-          // Add the new reaction
-          return {
-            ...msg,
-            reactions: [
+  const handleAddReaction = async (messageId: string, emoji: string) => {
+    const token = localStorage.getItem("access_token");
+  
+    setMessages(prevMessages =>
+      prevMessages.map(msg => {
+        if (msg.id === messageId) {
+          const existingReactionIndex = msg.reactions.findIndex(
+            r => r.emoji === emoji && r.userId === currentUser.id
+          );
+  
+          if (existingReactionIndex >= 0) {
+            // Remove reaction from local state
+            const updatedReactions = [...msg.reactions];
+            updatedReactions.splice(existingReactionIndex, 1);
+  
+            // Persist remove to backend
+            api.post(
+              `messages/${messageId}/remove-reaction/`,
+              { emoji },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            ).catch(err => {
+              console.error("Failed to remove reaction:", err);
+            });
+  
+            return { ...msg, reactions: updatedReactions };
+          } else {
+            // Add reaction locally
+            const newReactions = [
               ...msg.reactions,
-              { userId: currentUser.id, emoji, timestamp: new Date().toISOString() }
-            ]
-          };
+              {
+                userId: currentUser.id,
+                emoji,
+                timestamp: new Date().toISOString(),
+              },
+            ];
+  
+            // Persist add to backend
+            api.post(
+              `messages/${messageId}/react/`,
+              { emoji },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            ).catch(err => {
+              console.error("Failed to add reaction:", err);
+            });
+  
+            return { ...msg, reactions: newReactions };
+          }
         }
-      }
-      return msg;
-    }));
+        return msg;
+      })
+    );
   };
+  
+
+
+
+
+
+
+
+
+
 
   const handleMarkMessageAsRead = (messageId: string) => {
     setMessages(prev => 
@@ -176,10 +290,11 @@ const ChatBox = ({ selectedUser, conversationId }: ChatBoxProps) => {
         ) : messages.length === 0 ? (
           <p className="text-center text-muted-foreground">No messages yet.</p>
         ) : (
-          messages.map(message => (
+          messages.map((message,index) => (
 
             <MessageItem 
-              key={message.id}
+              // key={message.id}
+              key={`${message.id}-${index}`} // Fallback to avoid key collisions
               message={message}
               isCurrentUser={message.senderId === currentUser.id}
               onAddReaction={(emoji) => handleAddReaction(message.id, emoji)}

@@ -68,7 +68,8 @@ const MessageItem = ({ message, isCurrentUser, onAddReaction, onMarkAsRead }: Me
         
         {/* Reaction picker */}
         {showReactionPicker && (
-          <div className={`absolute z-10 ${isCurrentUser ? "right-0" : "left-0"} bottom-full mb-2`}>
+          <div className={`absolute z-10 top-1/2 -translate-y-1/2  mt-2 ${isCurrentUser ? "right-full mr-2" : "left-full ml-2"}`}>
+
             <EmojiPicker
               onSelect={handleAddReaction}
               onClickOutside={() => setShowReactionPicker(false)}
