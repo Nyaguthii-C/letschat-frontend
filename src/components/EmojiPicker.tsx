@@ -25,7 +25,7 @@ const EmojiPicker = ({ onSelect, onClickOutside }: EmojiPickerProps) => {
   }, [onClickOutside]);
 
   return (
-    <Card ref={ref} className="w-64 h-48 overflow-auto p-2 grid grid-cols-8 gap-1">
+    <Card ref={ref} className="w-64 h-40 mt-4 overflow-auto p-2 grid grid-cols-8 gap-1">
       {commonEmojis.map((emoji, index) => (
         <button
           key={index}
