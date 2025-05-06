@@ -8,13 +8,6 @@ import EmojiPicker from "@/components/EmojiPicker";
 import { Message, User } from "@/types/chat";
 import api from "@/api";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -40,8 +33,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   const [error, setError] = useState<string | null>(null);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   
-  // Added state for message editing and selection
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  // Keep only selection and delete functionality, remove editing
   const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showMultiDeleteDialog, setShowMultiDeleteDialog] = useState(false);
@@ -57,13 +49,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // Focus input when editing a message
-  useEffect(() => {
-    if (editingMessage && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [editingMessage]);
 
   const fetchMessages = async () => {
     if (!conversationId) return; 
@@ -144,56 +129,40 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       const token = localStorage.getItem("access_token");
   
       try {
-        // If we are editing a message, handle the update
-        if (editingMessage) {
-          console.log("Editing message:", editingMessage.id, "with new text:", newMessage);
-          
-          // Update the message locally
-          setMessages(prevMessages =>
-            prevMessages.map(msg => 
-              msg.id === editingMessage.id ? { ...msg, text: newMessage } : msg
-            )
-          );
-          
-          // Clear editing state
-          setEditingMessage(null);
-          setNewMessage("");
-        } else {
-          // Regular new message sending
-          const res = await api.post(
-            "messages/send/",
-            {
-              receiver: selectedUser.id,
-              content: newMessage,
+        // Only handle new message sending (removed editing functionality)
+        const res = await api.post(
+          "messages/send/",
+          {
+            receiver: selectedUser.id,
+            content: newMessage,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
             },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          console.log("New message added:", newMessage);
-
-          const newMsg: Message = {
-            id: res.data.id,
-            senderId: res.data.sender_id,
-            text: res.data.content,
-            timestamp: res.data.timestamp,
-            status: "sent",
-            reactions: [],
-          };
-
-          if (!conversationId) {
-            const newConversationId = res.data.data.conversation;
-            setConversationId(newConversationId);
-            await fetchMessagesWithId(newConversationId);
-          } else {
-            await fetchMessages(); // use existing ID
           }
-          
-          setMessages(prev => [...prev, newMsg]);
-          setNewMessage("");
+        );
+        console.log("New message added:", newMessage);
+
+        const newMsg: Message = {
+          id: res.data.id,
+          senderId: res.data.sender_id,
+          text: res.data.content,
+          timestamp: res.data.timestamp,
+          status: "sent",
+          reactions: [],
+        };
+
+        if (!conversationId) {
+          const newConversationId = res.data.data.conversation;
+          setConversationId(newConversationId);
+          await fetchMessagesWithId(newConversationId);
+        } else {
+          await fetchMessages(); // use existing ID
         }
+        
+        setMessages(prev => [...prev, newMsg]);
+        setNewMessage("");
 
         // Immediately re-fetch messages from backend
         await fetchMessages();
@@ -201,15 +170,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       } catch (err) {
         console.error("Failed to send message:", err);
       }
-    }
-  };
-  
-  const handleEditMessage = (message: Message) => {
-    console.log("Edit message triggered:", message);
-    setEditingMessage(message);
-    setNewMessage(message.text);
-    if (inputRef.current) {
-      inputRef.current.focus();
     }
   };
   
@@ -352,11 +312,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
     }
   };
 
-  const cancelEditing = () => {
-    setEditingMessage(null);
-    setNewMessage("");
-  };
-
   return (
     <div className="flex flex-col h-full">
       {/* Chat header */}
@@ -431,7 +386,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
               isSelected={selectedMessages.has(message.id)}
               onAddReaction={(emoji) => handleAddReaction(message.id, emoji)}
               onMarkAsRead={() => handleMarkMessageAsRead(message.id)}
-              onEdit={() => handleEditMessage(message)}
               onDelete={() => {
                 setMessageToDelete(message);
                 setShowDeleteDialog(true);
@@ -459,7 +413,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
+      {/* Input area - Removed editing UI */}
       <div className="p-4 border-t bg-white relative">
         {showEmojiPicker && (
           <div className="absolute bottom-16 right-4">
@@ -470,20 +424,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
               }}
               onClickOutside={() => setShowEmojiPicker(false)}
             />
-          </div>
-        )}
-        
-        {/* Edit mode indicator */}
-        {editingMessage && (
-          <div className="mb-2 bg-yellow-50 p-2 rounded-md text-sm flex items-center justify-between">
-            <span>Editing message</span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={cancelEditing}
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         )}
         
@@ -501,7 +441,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
             ref={inputRef}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={editingMessage ? "Edit message..." : "Type a message..."}
+            placeholder="Type a message..."
             className="flex-1"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -516,18 +456,8 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
             onClick={handleSendMessage} 
             disabled={!newMessage.trim()}
           >
-            {editingMessage ? "Update" : <Send className="h-5 w-5" />}
+            <Send className="h-5 w-5" />
           </Button>
-          
-          {editingMessage && (
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={cancelEditing}
-            >
-              Cancel
-            </Button>
-          )}
         </div>
       </div>
 

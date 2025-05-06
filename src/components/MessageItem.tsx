@@ -1,7 +1,7 @@
 
 import { useState, useRef } from "react";
 import { format } from "date-fns";
-import { Smile, Check, Edit, Trash2 } from "lucide-react";
+import { Smile, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EmojiPicker from "@/components/EmojiPicker";
 import { Message } from "@/types/chat";
@@ -18,7 +18,6 @@ interface MessageItemProps {
   isSelected?: boolean;
   onAddReaction: (emoji: string) => void;
   onMarkAsRead?: () => void;
-  onEdit?: () => void;
   onDelete?: () => void;
   onSelect?: () => void;
 }
@@ -29,7 +28,6 @@ const MessageItem = ({
   isSelected = false,
   onAddReaction, 
   onMarkAsRead,
-  onEdit,
   onDelete,
   onSelect
 }: MessageItemProps) => {
@@ -81,20 +79,9 @@ const MessageItem = ({
               )}
             </div>
             
-            {/* Action buttons for current user's messages - Make them more visible */}
+            {/* Action buttons for current user's messages - Removed edit button */}
             {isCurrentUser && (
-              <div className="absolute -right-24 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-6 w-6 bg-white hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onEdit) onEdit();
-                  }}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
+              <div className="absolute -right-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -104,7 +91,7 @@ const MessageItem = ({
                     if (onDelete) onDelete();
                   }}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4 text-red-500" />
                 </Button>
                 <Button 
                   variant="outline" 
@@ -159,18 +146,12 @@ const MessageItem = ({
       </ContextMenuTrigger>
       <ContextMenuContent>
         {isCurrentUser && (
-          <>
-            <ContextMenuItem onClick={() => onEdit && onEdit()}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Message
-            </ContextMenuItem>
-            <ContextMenuItem onClick={() => onDelete && onDelete()}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Message
-            </ContextMenuItem>
-          </>
+          <ContextMenuItem onClick={() => onDelete && onDelete()} className="cursor-pointer">
+            <Trash2 className="h-4 w-4 mr-2 text-red-500" />
+            Delete Message
+          </ContextMenuItem>
         )}
-        <ContextMenuItem onClick={() => onSelect && onSelect()}>
+        <ContextMenuItem onClick={() => onSelect && onSelect()} className="cursor-pointer">
           {isSelected ? "Unselect Message" : "Select Message"}
         </ContextMenuItem>
       </ContextMenuContent>
