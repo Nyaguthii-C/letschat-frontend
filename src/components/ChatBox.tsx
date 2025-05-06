@@ -148,10 +148,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
         if (editingMessage) {
           console.log("Editing message:", editingMessage.id, "with new text:", newMessage);
           
-          // In a real app, you would make an API call to update the message
-          // await api.put(`messages/${editingMessage.id}`, { content: newMessage }, { headers: { Authorization: `Bearer ${token}` } });
-          
-          // For now, we'll update it locally
+          // Update the message locally
           setMessages(prevMessages =>
             prevMessages.map(msg => 
               msg.id === editingMessage.id ? { ...msg, text: newMessage } : msg
@@ -160,6 +157,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
           
           // Clear editing state
           setEditingMessage(null);
+          setNewMessage("");
         } else {
           // Regular new message sending
           const res = await api.post(
@@ -194,9 +192,8 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
           }
           
           setMessages(prev => [...prev, newMsg]);
+          setNewMessage("");
         }
-        
-        setNewMessage("");
 
         // Immediately re-fetch messages from backend
         await fetchMessages();
