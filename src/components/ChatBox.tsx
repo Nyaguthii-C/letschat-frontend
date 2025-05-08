@@ -33,7 +33,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   const [error, setError] = useState<string | null>(null);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   
-  // Keep only selection and delete functionality, remove editing
+  // Keep only selection and delete functionality
   const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showMultiDeleteDialog, setShowMultiDeleteDialog] = useState(false);
@@ -129,7 +129,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       const token = localStorage.getItem("access_token");
   
       try {
-        // Only handle new message sending (removed editing functionality)
+        // Only handle new message sending
         const res = await api.post(
           "messages/send/",
           {
@@ -183,7 +183,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
     
     const token = localStorage.getItem("access_token");
     try {
-      // API call 
       await api.delete(`messages/${messageToDelete.id}/delete/`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -427,7 +426,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area - Removed editing UI */}
+      {/* Input area */}
       <div className="p-4 border-t bg-white relative">
         {showEmojiPicker && (
           <div className="absolute bottom-16 right-4">
