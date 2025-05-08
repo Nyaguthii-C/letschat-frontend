@@ -33,7 +33,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   const [error, setError] = useState<string | null>(null);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   
-  // Keep only selection and delete functionality, remove editing
+  // Keep only selection and delete functionality
   const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showMultiDeleteDialog, setShowMultiDeleteDialog] = useState(false);
@@ -129,7 +129,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       const token = localStorage.getItem("access_token");
   
       try {
-        // Only handle new message sending (removed editing functionality)
+        // Only handle new message sending
         const res = await api.post(
           "messages/send/",
           {
@@ -174,14 +174,20 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   };
   
   const handleDeleteMessage = async () => {
-    if (!messageToDelete) return;
+    console.log("Delete function called");
+    if (!messageToDelete || !messageToDelete.id) {
+      console.warn("No message provided to delete.");
+      return;
+    }
+    console.log('Message to be deleted:', messageToDelete);
     
     const token = localStorage.getItem("access_token");
-    
     try {
-      // Simulated API call as the endpoint might not exist
-      // In a real app, you would have an endpoint like:
-      // await api.delete(`messages/${messageToDelete.id}`, {...});
+      await api.delete(`messages/${messageToDelete.id}/delete/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },        
+      });
       
       // Remove message locally
       setMessages(prevMessages => 
@@ -191,8 +197,8 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       setMessageToDelete(null);
       setShowDeleteDialog(false);
       
-      // In a real app, you would re-fetch from the server after delete
-      // await fetchMessages();
+      // re-fetch from the server after delete
+      await fetchMessages();
     } catch (err) {
       console.error("Failed to delete message:", err);
     }
@@ -204,9 +210,16 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
     const token = localStorage.getItem("access_token");
     
     try {
-      // Simulated API call as the endpoint might not exist
-      // In a real app, you would have an endpoint like:
-      // await api.delete(`messages/batch`, { ids: Array.from(selectedMessages) }, {...});
+      // Process each selected message
+      const deletePromises = Array.from(selectedMessages).map(messageId => 
+        api.delete(`messages/${messageId}/delete/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+      );
+      
+      await Promise.all(deletePromises);
       
       // Remove selected messages locally
       setMessages(prevMessages => 
@@ -216,8 +229,8 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       setSelectedMessages(new Set());
       setShowMultiDeleteDialog(false);
       
-      // In a real app, you would re-fetch from the server after delete
-      // await fetchMessages();
+      // Re-fetch from the server after delete
+      await fetchMessages();
     } catch (err) {
       console.error("Failed to delete selected messages:", err);
     }
@@ -413,7 +426,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area - Removed editing UI */}
+      {/* Input area */}
       <div className="p-4 border-t bg-white relative">
         {showEmojiPicker && (
           <div className="absolute bottom-16 right-4">
@@ -461,7 +474,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
         </div>
       </div>
 
-      {/* Delete Message Confirmation */}
+      {/* Delete Single Message Confirmation */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

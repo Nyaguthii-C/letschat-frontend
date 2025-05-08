@@ -79,7 +79,7 @@ const MessageItem = ({
               )}
             </div>
             
-            {/* Action buttons for current user's messages - Removed edit button */}
+            {/* Action buttons for current user's messages */}
             {isCurrentUser && (
               <div className="absolute -right-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
                 <Button 
