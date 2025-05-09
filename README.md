@@ -1,4 +1,4 @@
-# Welcome to your LetsChat frontend
+# Welcome to LetsChat frontend
 
 
 ![LetsChat UI](public/letschatUI.png)
