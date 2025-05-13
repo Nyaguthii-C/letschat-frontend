@@ -8,7 +8,7 @@ import { BASE_URL_IP } from '@/api';
 // Define the notification interface to match backend
 interface Notification {
   id: string;
-  type: 'message' | 'reaction';
+  type: 'new_message' | 'reaction';
   userName: string;
   userAvatar?: string | null;
   timeAgo: string;
@@ -113,13 +113,13 @@ const NotificationCenter = ({ onClose }: NotificationCenterProps) => {
                 <div className="ml-3 flex-1">
                   <p className="text-sm">
                     <span className="font-medium">{notification.userName}</span>{" "}
-                    {notification.type === "message" && "sent you a message"}
+                    {notification.type === "new_message" && "sent you a message"}
                     {notification.type === "reaction" && "reacted to your message"}
                   </p>
                   <p className="text-xs text-gray-500">{notification.timeAgo}</p>
                 </div>
                 <div className="ml-2 flex items-center justify-center h-8 w-8 bg-gray-100 rounded-full text-gray-500">
-                  {notification.type === "message" && <MessageSquare className="h-4 w-4" />}
+                  {notification.type === "new_message" && <MessageSquare className="h-4 w-4" />}
                   {notification.type === "reaction" && <Smile className="h-4 w-4" />}
                 </div>
                 {notification.unread && (
