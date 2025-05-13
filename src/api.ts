@@ -3,6 +3,8 @@ import axios from 'axios';
 // base URL for the API
 const BASE_URL = 'http://127.0.0.1:8000';
 
+export const BASE_URL_IP = '127.0.0.1:8000';
+
 // axios instance with base URL
 const api = axios.create({
   baseURL: BASE_URL,
