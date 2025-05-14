@@ -17,6 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { BASE_URL_IP } from '@/api';
+
 
 interface ChatBoxProps {
   selectedUser: User;
@@ -324,6 +326,57 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       setSelectedMessages(new Set(messages.map(msg => msg.id)));
     }
   };
+
+
+
+
+
+
+
+
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    const socket = new WebSocket(`ws://${BASE_URL_IP}/ws/notifications/?token=${token}`);
+
+    socket.onopen = () => {
+      console.log("WebSocket connected for messages");
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === "new_message") {
+        const senderId = data.sender;
+
+        // Only refetch if the message is from the current conversation
+        if (senderId === selectedUser.id) {
+          fetchMessages();
+        }
+        console.log('sender id for new message', senderId)
+        console.log('the data from new_message', data)
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    socket.onclose = () => {
+      console.log("WebSocket disconnected for messages");
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [selectedUser.id, conversationId]);
+
+
+
+
+
+
+
 
   return (
     <div className="flex flex-col h-full">
