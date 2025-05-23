@@ -49,7 +49,7 @@ const NotificationCenter = ({ onClose }: NotificationCenterProps) => {
               id: data.id || `notif-${Date.now()}`,
               type: data.type,
               userName: data.sender_data?.full_name || data.reactor_data?.full_name || 'Unknown',
-              userAvatar: data.sender_data?.profile_photo || data.reactor_data?.profile_photo,
+              // userAvatar: data.sender_data?.profile_photo || data.reactor_data?.profile_photo,
               timeAgo: 'Just now',
               unread: true,
               content: data.content,
