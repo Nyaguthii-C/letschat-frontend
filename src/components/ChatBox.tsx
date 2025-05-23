@@ -35,7 +35,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   const [error, setError] = useState<string | null>(null);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   
-  // Keep only selection and delete functionality
+  // selection and delete functionality
   const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showMultiDeleteDialog, setShowMultiDeleteDialog] = useState(false);
@@ -131,7 +131,7 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       const token = localStorage.getItem("access_token");
   
       try {
-        // Only handle new message sending
+        // handle new message sending
         const res = await api.post(
           "messages/send/",
           {
@@ -328,13 +328,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
   };
 
 
-
-
-
-
-
-
-
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     const socket = new WebSocket(`ws://${BASE_URL_IP}/ws/notifications/?token=${token}`);
@@ -356,6 +349,12 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
         console.log('sender id for new message', senderId)
         console.log('the data from new_message', data)
       }
+      if (data.type === 'reaction'){
+        if(selectedUser.id === data.reactor_data.id){
+        // refetch messages to load new reactions
+          fetchMessages();
+        }
+      }
     };
 
     socket.onerror = (error) => {
@@ -370,10 +369,6 @@ const ChatBox = ({ selectedUser, conversationId, setConversationId }: ChatBoxPro
       socket.close();
     };
   }, [selectedUser.id, conversationId]);
-
-
-
-
 
 
 
