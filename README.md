@@ -1,7 +1,13 @@
 # Welcome to LetsChat frontend
 
+#### one-on-one chat 
+<!---![LetsChat UI](public/letschatUI.png)--->  
+<img src="public/letschatUI.png" alt="peer chats" width="80%">
 
-![LetsChat UI](public/letschatUI.png)
+
+#### notifications
+<!---![Notifications](public/notifs.png)--->
+<img src="public/notifs.png" alt="notifications" width="80%">
 
 ## Project info
 To work locally using your own IDE, you can clone this repo.
