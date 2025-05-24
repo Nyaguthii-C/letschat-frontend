@@ -3,6 +3,8 @@
 
 ![LetsChat UI](public/letschatUI.png)
 
+![Notifications](public/notifs.png)
+
 ## Project info
 To work locally using your own IDE, you can clone this repo.
 
