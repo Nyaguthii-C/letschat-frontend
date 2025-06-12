@@ -1,36 +1,15 @@
 import axios from 'axios';
 
-// base URL for the API
 const BASE_URL = 'http://127.0.0.1:8000';
-
 export const BASE_URL_IP = '127.0.0.1:8000';
 
-// axios instance with base URL
+// Axios instance
 const api = axios.create({
   baseURL: BASE_URL,
+  withCredentials: true, // Needed for sending HttpOnly cookies
 });
 
-
-
-export const postSignUp = (data: FormData) => {
-    return api.post('auth/register/', data, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-  };
-  
-
-
-export const postLogin = (data: Record<string, any>) => {
-    return api.post('auth/login/', data);
-  };
-
-  
-
-// intercept and refresh expired tokens
-
-// request interceptor to add the access token to the headers
+// Request interceptor to attach access token
 api.interceptors.request.use((config) => {
   const accessToken = localStorage.getItem('access_token');
   if (accessToken) {
@@ -39,67 +18,71 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// // response interceptor to handle token refresh
-// api.interceptors.response.use(
-//   (response) => response,  // If response is successful, just return it
-//   async (error) => {
-//     if (error.response.status === 401) {
-//       // The access token is expired
-//       const refreshToken = getCookie('refresh_token');  // Function to get the refresh token from cookies
+// Response interceptor to handle token refresh
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-//       if (refreshToken) {
-//         // Try to refresh the token
-//         const response = await axios.post('auth/refresh-token/', {}, {
-//           withCredentials: true,  // Ensure cookies are sent with the request
-//         });
+    // If access token is expired and this is the first retry
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
 
-//         // If refresh is successful, store the new access token and retry the original request
-//         localStorage.setItem('access_token', response.data.access);
-//         error.config.headers['Authorization'] = `Bearer ${response.data.access}`;
-//         return axios(error.config);
-//       }
-//     }
-//     return Promise.reject(error);  // Reject other errors
-//   }
-// );
+      try {
+        // Create a clean axios instance to refresh token (no interceptors)
+        const refreshResponse = await axios.post(
+          `${BASE_URL}/auth/refresh-token/`,
+          {},
+          {
+            withCredentials: true, // Include HttpOnly cookie
+          }
+        );
+        const newAccessToken = refreshResponse.data.access;
 
-// // Utility function to get the cookie value (for use in the refresh token request)
-// function getCookie(name: string) {
-//   const value = `; ${document.cookie}`;
-//   const parts = value.split(`; ${name}=`);
-//   if (parts.length === 2) return parts.pop()?.split(';').shift();
-//   return null;
-// }
+        // Save new token and retry original request
+        localStorage.setItem('access_token', newAccessToken);
+        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
 
+        return axios(originalRequest);
+      } catch (refreshError) {
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
 
+    return Promise.reject(error);
+  }
+);
 
+// Utility to manually read a cookie
+function getCookie(name: string) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  return null;
+}
 
-// utiliy function to get conversation between users or start a new one
+// API functions
+export const postSignUp = (data: FormData) => {
+  return api.post('auth/register/', data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+export const postLogin = (data: Record<string, any>) => {
+  return api.post('auth/login/', data);
+};
+
 export const getConversationWithUser = async (userEmail) => {
   try {
     const response = await api.get(`conversations/with/${userEmail}/`);
-    return response.data.id; // could be null if not found
-
-    // const conversation = await api.get(`conversations/${response.data.id}/`);
-
-    // console.log('gotten convo', conversation.data) 
-    // return conversation.data
-
-
+    return response.data.id;
   } catch (error) {
     console.error('Error fetching conversation:', error);
     throw error;
   }
-
-  
 };
-
-
-
-
-
-
-
-
 
 export default api;
